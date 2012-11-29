@@ -164,7 +164,7 @@ class Deploy
 
 	def deploy_to_sf
 		self.create_build_file
-		system("cd ~/deploy && ant")
+		system("cd #{@deploy_dir} && ant")
 	end
 end
 
