@@ -9,8 +9,3 @@ Make sure to create the build.properties file and adjust the Deploy class instan
 Make sure you have the salesforce ant migration tool in your ant lib dir.
 
 sudo deploy.rb ~/src/file_one.cls ~/src/file_two.trigger ~/src/file_three.page
-
-#salesforce
-#force.com
-#forcedotcom
-#apex
