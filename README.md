@@ -1,3 +1,7 @@
+# WHAT?
+
+Quick deployment of force.com classes, triggers, and pages edited locally. I created it so that I could dev in VIM and use the cli to quick save my changes to my dev org as I work.
+
 # USAGE (unlike Bikeage)
 
 Make sure to create the build.properties file and adjust the Deploy class instance variable, @xml_ant_build, to point to it.
