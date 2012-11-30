@@ -1,5 +1,6 @@
 require 'fileutils'
 
+# Handles the files supplied at the CLI. 
 class FileHandler 
 	attr_accessor :files
 	attr_accessor :metas
@@ -11,6 +12,8 @@ class FileHandler
 		@meta_ext = "-meta.xml"
 	end
 
+	# Checks if the files exist and if 
+	# they have associated metadata files
 	def build_deploy_package(file_names)
 		file_names.each do |file_name|
 			if File.exists?(file_name)
@@ -23,7 +26,7 @@ class FileHandler
 
 		if !@files.empty?
 			p = Package.new
-			p.build(file_names, @metas)	
+			p.build(@files, @metas)	
 		end
 	end
 end
@@ -45,16 +48,18 @@ class Package
 		@package = 'package.xml'
 		@api_version = '26.0'
 		@xml = ''
-		@xml_body1 = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">'
-		@xml_body2 = '<version>' + @api_version + '</version></Package>' 
+		@xml_body1 = '<?xml version="1.0" encoding="UTF-8"?><Package 
+					xmlns="http://soap.sforce.com/2006/04/metadata">'
+		@xml_body2 = "<version>#{@api_version}</version></Package>"
 		@xml_types = { 'cls' => '<types><members>*</members><name>ApexClass</name></types>',
 					'page' => '<types><members>*</members><name>ApexPage</name></types>',	
-					'trigger' => '<types><members>*</members><name>ApexTrigger</name></types>'}
+					'trigger' => '<types><members>*</members><name>ApexTrigger</name></types>' }
 	end
 
 	def build(file_names, meta_names)
 	
-		self.clean_up
+		FileUtils.remove_dir(@deploy_dir, true)
+
 		types = []
 		file_names.each do |file_name|
 			parts = file_name.split('.')
@@ -80,14 +85,9 @@ class Package
 		self.add_files_to_deploy_dir(@deploy_dir + @dir_root_pack + File::SEPARATOR, file_names, meta_names)
 
 		# Zip it
-		#puts "cd #{@deploy_dir}#{@dir_root_pack} && zip -r pack.zip . && mv pack.zip ../pack.zip"
-		system("cd #{@deploy_dir}#{@dir_root_pack} && zip -r pack.zip . && mv pack.zip ../pack.zip")
+		system("cd #{@deploy_dir}#{@dir_root_pack} && zip -r pack.zip . && mv pack.zip ..#{File::SEPARATOR}pack.zip")
 
 		@deploy_dir
-	end
-
-	def clean_up
-		FileUtils.remove_dir(@deploy_dir, true)
 	end
 
 	def create_deploy_dir
@@ -143,14 +143,14 @@ class Deploy
 		@deploy_dir = deploy_dir
 		@build_file = 'build.xml'	
 		@xml_ant_build = '<project name="Quick Code Deploy" default="deployUnpackaged" basedir="." xmlns:sf="antlib:com.salesforce">
-							<property file="/etc/sf_deploy/build.properties"/>
-							<property environment="env"/>
-								<target name="deployUnpackaged">
-									<sf:deploy username="${sf.username}" 
-										password="${sf.password}" 
-										serverurl="${sf.serverurl}" 
-										zipFile="pack.zip"/>
-								</target>
+						<property file="/etc/sf_deploy/build.properties"/>
+						<property environment="env"/>
+						<target name="deployUnpackaged">
+						<sf:deploy username="${sf.username}" 
+						password="${sf.password}" 
+						serverurl="${sf.serverurl}" 
+						zipFile="pack.zip"/>
+						</target>
 						</project>'
 	end
 
