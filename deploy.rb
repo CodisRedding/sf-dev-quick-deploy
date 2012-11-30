@@ -149,7 +149,9 @@ class Deploy
 						<sf:deploy username="${sf.username}" 
 						password="${sf.password}" 
 						serverurl="${sf.serverurl}" 
-						zipFile="pack.zip"/>
+						zipFile="pack.zip" 
+						pollWaitMillis="10000" 
+						maxPoll="200"/>
 						</target>
 						</project>'
 	end
