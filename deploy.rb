@@ -4,11 +4,15 @@ require 'fileutils'
 class FileHandler 
 	attr_accessor :files
 	attr_accessor :metas
+	attr_accessor :unit_tests
 	attr_accessor :meta_ext
+	attr_accessor :unit_tests_start
 
 	def initialize
 		@files = []
 		@metas = []
+		@unit_tests = []
+		@unit_tests_start = false	
 		@meta_ext = "-meta.xml"
 	end
 
@@ -16,17 +20,31 @@ class FileHandler
 	# they have associated metadata files
 	def build_deploy_package(file_names)
 		file_names.each do |file_name|
+
+			if file_name == "--ut"
+				@unit_tests_start = true
+				next
+			end
+
+			# Check if file exists
 			if File.exists?(file_name)
 				@files << file_name
+
+				# Check if metadata file exists
 				if File.exists?(file_name + @meta_ext)
 					@metas << file_name + @meta_ext
+				end
+			
+				# Parse class name	
+				if @unit_tests_start
+					@unit_tests << file_name.split(File::SEPARATOR).last.split('.').first			
 				end
 			end
 		end
 
 		if !@files.empty?
 			p = Package.new
-			p.build(@files, @metas)	
+			p.build(@files, @metas, @unit_tests)	
 		end
 	end
 end
@@ -56,7 +74,7 @@ class Package
 					'trigger' => '<types><members>*</members><name>ApexTrigger</name></types>' }
 	end
 
-	def build(file_names, meta_names)
+	def build(file_names, meta_names, unit_tests)
 	
 		FileUtils.remove_dir(@deploy_dir, true)
 
@@ -164,7 +182,10 @@ class Deploy
 		File.open(@deploy_dir + @build_file, 'w:UTF-8') { |f| f.write(@xml_ant_build) } 	
 	end
 
-	def deploy_to_sf
+	def deploy_to_sf(unit_tests)
+		if !unit_tests.empty?
+			# alter @xml_ant_build to include unit tests to run
+		end
 		self.create_build_file
 		system("cd #{@deploy_dir} && ant")
 	end
