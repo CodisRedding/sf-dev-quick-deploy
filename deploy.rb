@@ -2,13 +2,10 @@ require 'fileutils'
 
 # Handles the files supplied at the CLI. 
 class FileHandler 
-	attr_accessor :files
-	attr_accessor :metas
-	attr_accessor :meta_ext
+	attr_accessor :files, :metas, :meta_ext
 
 	def initialize
-		@files = []
-		@metas = []
+		@files = @metas = []
 		@meta_ext = "-meta.xml"
 	end
 
@@ -16,62 +13,37 @@ class FileHandler
 	# they have associated metadata files
 	def build_deploy_package(file_names)
 		file_names.each do |file_name|
-			if File.exists?(file_name)
-				@files << file_name
-				if File.exists?(file_name + @meta_ext)
-					@metas << file_name + @meta_ext
-				end
-			end
+			@files << file_name if File.exists? file_name
+			metadata_file_name = file_name + @meta_ext
+			@metas << metadata_file_name if File.exists? metadata_file_name
 		end
-
-		if !@files.empty?
-			p = Package.new
-			p.build(@files, @metas)	
-		end
+		
+		Package.build(@files, @metas) unless @files.empty?
 	end
 end
 
 class Package
-	attr_accessor :xml_body1
-	attr_accessor :xml_body2	
-	attr_accessor :xml	
-	attr_accessor :api_version
-	attr_accessor :xml_type
-	attr_accessor :package
-	attr_accessor :dir_root
-	attr_accessor :dir_root_pack
 	attr_accessor :deploy_dir
 	
-	def initialize
-		@dir_root = 'deploy'
-		@dir_root_pack = 'pack'
-		@package = 'package.xml'
-		@api_version = '26.0'
-		@xml = ''
-		@xml_body1 = '<?xml version="1.0" encoding="UTF-8"?><Package 
-					xmlns="http://soap.sforce.com/2006/04/metadata">'
-		@xml_body2 = "<version>#{@api_version}</version></Package>"
-		@xml_types = { 'cls' => '<types><members>*</members><name>ApexClass</name></types>',
-					'page' => '<types><members>*</members><name>ApexPage</name></types>',	
-					'trigger' => '<types><members>*</members><name>ApexTrigger</name></types>' }
-	end
+	@dir_root      = 'deploy'
+	@dir_root_pack = 'pack'
+	@package       = 'package.xml'
+	@api_version   = '26.0'
+	@xml_body1     = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">'
+	@xml_body2     = "<version>#{@api_version}</version></Package>"
+	@xml_types     = { 
+						'cls'     => '<types><members>*</members><name>ApexClass</name></types>',
+						'page'    => '<types><members>*</members><name>ApexPage</name></types>',	
+						'trigger' => '<types><members>*</members><name>ApexTrigger</name></types>' 
+					}
 
-	def build(file_names, meta_names)
-	
-		FileUtils.remove_dir(@deploy_dir, true)
-
+	def self.build(file_names, meta_names)
 		types = []
-		file_names.each do |file_name|
-			parts = file_name.split('.')
-			if !types.include? @xml_types[parts.last]
-				types << @xml_types[parts.last]		
-			end
-		end
+		file_names.each {|f_n| types << f_n.split('.').last}
+		types = types.uniq #you almost never really want to use #Uniq! as it will return nil if no changes are made.
 	
-		@xml << @xml_body1
-		if !types.empty?
-			types.each { |t| @xml << t }	
-		end 
+		@xml = @xml_body1
+		types.each { |t| @xml << t } unless types.empty?
 		@xml << @xml_body2
 
 		# Create dir struct
@@ -90,16 +62,14 @@ class Package
 		@deploy_dir
 	end
 
-	def create_deploy_dir
+	def self.create_deploy_dir
 		path = File.join(Dir.home, @dir_root)
-		if Dir.exists?(path)
-			FileUtils.remove_dir(path, true)
-		end
+		FileUtils.remove_dir(path, true) if Dir.exists? path
 		Dir.mkdir(path, 0777)
 		path + File::SEPARATOR
 	end
 
-	def add_files_to_deploy_dir(deploy_dir, file_names, meta_names)
+	def self.add_files_to_deploy_dir(deploy_dir, file_names, meta_names)
 		(file_names + meta_names).each do |file_name|
 			con = IO.read(file_name)	
 			parts = file_name.split(File::SEPARATOR)
@@ -135,9 +105,7 @@ class Package
 end
 
 class Deploy
-	attr_accessor :xml_ant_build
-	attr_accessor :deploy_dir
-	attr_accessor :build_file
+	attr_accessor :xml_ant_build, :deploy_dir, :build_file
 
 	def initialize(deploy_dir)
 		@deploy_dir = deploy_dir
